@@ -1,0 +1,12 @@
+[package]
+name = "valve-server-query"
+version = "0.1.0"
+authors = ["uru"]
+edition = "2018"
+
+[dependencies]
+serde_json = "1.0.41"
+
+[dependencies.async-std]
+version = "0.99"
+features = ["unstable"]
