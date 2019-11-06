@@ -1,31 +1,48 @@
-extern crate async_std;
-
-use async_std::io;
-use async_std::net::UdpSocket;
-use async_std::task;
+use std::net::UdpSocket;
+use std::time::Duration;
 
 // reference: https://developer.valvesoftware.com/wiki/Server_queries
 
 const SPECIAL_CHARA_VEC: &'static [u8] = &[0xff, 0xff, 0xff, 0xff];
 const PAYLOAD: &'static [u8] = "Source Engine Query".as_bytes();
 
-pub fn info_query<'a>(host: &'a str, port: &'a str) -> io::Result<Vec<u8>> {
-    let address = format!("{}:{}", host, port);
+pub struct QueryContext {
+    socket: UdpSocket,
+}
 
-    return task::block_on(async {
-        let socket = UdpSocket::bind("0.0.0.0:12345").await?;
+impl QueryContext {
+    pub fn new() -> QueryContext {
+        let socket = UdpSocket::bind("0.0.0.0:12345").unwrap();
+        let timeout_sec = Some(Duration::new(2, 0));
+        socket.set_read_timeout(timeout_sec);
+        socket.set_write_timeout(timeout_sec);
+        return QueryContext {
+            socket: socket,
+        };
+    }
 
+    pub fn info_query<'a>(&self, host: &'a str, port: &'a str) -> Vec<u8> {
         let query_type = 0x54; // 'T'
+        return Vec::from(self.send_query(&host, &port, query_type, None as Option<&[u8]>));
+    }
 
-        let query = build_query(query_type, None as Option<&[u8]>);
+    pub fn player_query<'a>(&self, host: &'a str, port: &'a str) -> Vec<u8> {
+        let query_type = 0x55; // 'U'
+        let result = self.send_query(&host, &port, query_type, None as Option<&[u8]>);
+        let chanllenge_token = &result[5..9]; // challenge token, [0xFF,0xFF,0xFF,0xFF,0x41,hoge,hoge,hoge,hoge]
+        return Vec::from(self.send_query(&host, &port, query_type, Some(chanllenge_token)));
+    }
 
-        socket.send_to(&query, &address).await?;
-
+    fn send_query<'a>(&self, host: &'a str, port: &'a str, query_type: u8, challenge_token: Option<&[u8]>) -> Vec<u8> {
+        let address = format!("{}:{}", host, port);
+        let query_type = query_type;
+        let query = build_query(query_type, challenge_token);
+        self.socket.send_to(&query, &address);
         let mut buf = vec![0u8; 1024];
-        let (n, _) = socket.recv_from(&mut buf).await?;
-
-        Ok(Vec::from(&buf[..n]))
-    });
+        let (n, _) = self.socket.recv_from(&mut buf)
+                                .expect("Didn't receive data");
+        return Vec::from(&buf[..n]);
+    }
 }
 
 pub fn build_query(query_type: u8, challenge_token: Option<&[u8]>) -> Vec<u8> {
