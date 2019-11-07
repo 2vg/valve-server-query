@@ -38,7 +38,7 @@ impl QueryContext {
         let query_type = query_type;
         let query = build_query(query_type, challenge_token);
         self.socket.send_to(&query, &address);
-        let mut buf = vec![0u8; 1024];
+        let mut buf = vec![0u8; 10240];
         let (n, _) = self.socket.recv_from(&mut buf)
                                 .expect("Didn't receive data");
         return Vec::from(&buf[..n]);
