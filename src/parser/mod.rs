@@ -1,5 +1,8 @@
+extern crate binary_reader;
 extern crate serde;
 extern crate serde_json;
+ 
+use binary_reader::{Endian, BinaryReader};
 
 use std::collections::HashMap;
 
@@ -41,6 +44,27 @@ pub fn parse_info_response(response: Vec<u8>) -> std::result::Result<Value, Stri
         "bots": bots.to_string(),
         "server_type": server_type,
         "server_environment": server_environment,
+    }))
+}
+
+pub fn parse_player_response(response: Vec<u8>) -> std::result::Result<Value, String> {
+    let mut r = response[6..].iter();
+    let mut binary = BinaryReader::from_vec(&response);
+    binary.read_u32();
+    binary.read_u8();
+
+    let players = binary.read_i8().unwrap();
+
+    for x in 0..players {
+        let index = binary.read_u8().unwrap();
+        let name = binary.read_cstr();
+        let score = binary.read_u32().unwrap();
+        let time = binary.read_i32().unwrap();
+
+        println!("index: {}, name: {}, score: {}, time: {}", index, name, score, time);
+    }
+
+    Ok(json!({
     }))
 }
 
