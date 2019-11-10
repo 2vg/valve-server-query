@@ -18,20 +18,24 @@ pub fn parse_info_response(response: Vec<u8>) -> std::result::Result<Value, Stri
         return Err(error_helper_for_parse_response("4", &[response[4]]))
     }
 
-    let mut r = response[6..].split(|bin| bin == &0x00);
+    let mut binary = BinaryReader::from_vec(&response);
+    binary.set_endian(Endian::Little);
+    binary.read_u32(); // 0xFF,0xFF,0xFF,0xFF
+    binary.read_u8(); // Header
+    binary.read_u8(); // packet type
 
-    let server_name = String::from_utf8_lossy(r.next().unwrap());
-    let map_name = String::from_utf8_lossy(r.next().unwrap());
-    let folder = String::from_utf8_lossy(r.next().unwrap());
-    let game_name = String::from_utf8_lossy(r.next().unwrap());
-
-    let tmp = r.next().unwrap();
-    let steam_app_id = (tmp[0] as u16) + ((tmp[1] as u16) << 8);
-    let players = tmp[2];
-    let max_players = tmp[3];
-    let bots = tmp[4];
-    let server_type = tmp[5] as char;
-    let server_environment = tmp[6] as char;
+    let server_name = binary.read_cstr();
+    let map_name = binary.read_cstr();
+    let folder = binary.read_cstr();
+    let game_name = binary.read_cstr();
+    let steam_app_id = binary.read_u16().unwrap();
+    let players = binary.read_i8().unwrap();
+    let max_players = binary.read_i8().unwrap();
+    let bots = binary.read_i8().unwrap();
+    let server_type = binary.read_u8().unwrap() as char;
+    let server_environment = binary.read_u8().unwrap() as char;
+    let visibility = binary.read_u8().unwrap() as char;
+    let vac = binary.read_u8().unwrap() as char;
 
     Ok(json!({
         "server_name": server_name,
@@ -44,24 +48,27 @@ pub fn parse_info_response(response: Vec<u8>) -> std::result::Result<Value, Stri
         "bots": bots.to_string(),
         "server_type": server_type,
         "server_environment": server_environment,
+        "visibility": visibility,
+        "vac": vac,
     }))
 }
 
 pub fn parse_player_response(response: Vec<u8>) -> std::result::Result<Value, String> {
     let mut r = response[6..].iter();
     let mut binary = BinaryReader::from_vec(&response);
+    binary.set_endian(Endian::Little);
     binary.read_u32();
     binary.read_u8();
 
     let players = binary.read_i8().unwrap();
 
-    for x in 0..players {
+    for _ in 0..players {
         let index = binary.read_u8().unwrap();
         let name = binary.read_cstr();
         let score = binary.read_u32().unwrap();
-        let time = binary.read_i32().unwrap();
+        let time = binary.read_u32().unwrap();
 
-        println!("index: {}, name: {}, score: {}, time: {}", index, name, score, time);
+        println!("index: {}, name: {}, score: {}, time: {}", index, name, score, f32::from_bits(time));
     }
 
     Ok(json!({
