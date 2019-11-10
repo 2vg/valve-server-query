@@ -34,8 +34,8 @@ pub fn parse_info_response(response: Vec<u8>) -> std::result::Result<Value, Stri
     let bots = binary.read_i8().unwrap();
     let server_type = binary.read_u8().unwrap() as char;
     let server_environment = binary.read_u8().unwrap() as char;
-    let visibility = binary.read_u8().unwrap() as char;
-    let vac = binary.read_u8().unwrap() as char;
+    let visibility = binary.read_i8().unwrap();
+    let vac = binary.read_i8().unwrap();
 
     Ok(json!({
         "server_name": server_name,

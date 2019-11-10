@@ -7,8 +7,8 @@ fn main() {
     let port = "27017";
     let ctx = QueryContext::new();
 
-    let buf = ctx.player_query(&host, &port);
-    let res = parser::parse_player_response(buf);
+    let buf = ctx.info_query(&host, &port);
+    let res = parser::parse_info_response(buf);
 
-    //println!("{}", res.unwrap());
+    println!("{}", res.unwrap());
 }
