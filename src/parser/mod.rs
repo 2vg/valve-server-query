@@ -53,26 +53,25 @@ pub fn parse_info_response(response: Vec<u8>) -> std::result::Result<Value, Stri
     }))
 }
 
-pub fn parse_player_response(response: Vec<u8>) -> std::result::Result<Value, String> {
-    let mut r = response[6..].iter();
+pub fn parse_player_response(response: Vec<u8>) -> std::result::Result<Vec<Value>, String> {
     let mut binary = BinaryReader::from_vec(&response);
     binary.set_endian(Endian::Little);
     binary.read_u32();
     binary.read_u8();
 
-    let players = binary.read_i8().unwrap();
+    let players = binary.read_u8().unwrap();
+    let mut players_vec = Vec::new();
 
     for _ in 0..players {
         let index = binary.read_u8().unwrap();
         let name = binary.read_cstr();
-        let score = binary.read_u32().unwrap();
+        let score = binary.read_i32().unwrap();
         let time = binary.read_u32().unwrap();
 
-        println!("index: {}, name: {}, score: {}, time: {}", index, name, score, f32::from_bits(time));
+        players_vec.push(json!({"index": index, "name": name, "score": score, "time": f32::from_bits(time)}));
     }
 
-    Ok(json!({
-    }))
+    Ok(players_vec)
 }
 
 pub fn json_to_string(json: &Value) -> Result<String> {
