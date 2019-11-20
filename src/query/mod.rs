@@ -43,9 +43,10 @@ impl QueryContext {
             Err(_) => { return vec![0u8;0]; }
         }
         let mut buf = vec![0u8; 10240];
-        let (n, _) = self.socket.recv_from(&mut buf)
-                                .expect("Didn't receive data");
-        return Vec::from(&buf[..n]);
+        match self.socket.recv_from(&mut buf) {
+            Ok(result) => { return Vec::from(&buf[..result.0]); },
+            Err(_) => { return vec![0u8;0]; }
+        }
     }
 }
 
