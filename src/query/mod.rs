@@ -14,8 +14,8 @@ impl QueryContext {
     pub fn new() -> QueryContext {
         let socket = UdpSocket::bind("0.0.0.0:12345").unwrap();
         let timeout_sec = Some(Duration::new(2, 0));
-        socket.set_read_timeout(timeout_sec);
-        socket.set_write_timeout(timeout_sec);
+        let _ = socket.set_read_timeout(timeout_sec);
+        let _ = socket.set_write_timeout(timeout_sec);
         return QueryContext {
             socket: socket,
         };
@@ -29,6 +29,7 @@ impl QueryContext {
     pub fn player_query<'a>(&self, host: &'a str, port: &'a str) -> Vec<u8> {
         let query_type = 0x55; // 'U'
         let result = self.send_query(&host, &port, query_type, None as Option<&[u8]>);
+        if result.len() == 0 { return result; } // for timeout error
         let chanllenge_token = &result[5..9]; // challenge token, [0xFF,0xFF,0xFF,0xFF,0x41,hoge,hoge,hoge,hoge]
         return Vec::from(self.send_query(&host, &port, query_type, Some(chanllenge_token)));
     }
@@ -37,7 +38,10 @@ impl QueryContext {
         let address = format!("{}:{}", host, port);
         let query_type = query_type;
         let query = build_query(query_type, challenge_token);
-        self.socket.send_to(&query, &address);
+        match self.socket.send_to(&query, &address) {
+            Ok(_) => {},
+            Err(_) => { return vec![0u8;0]; }
+        }
         let mut buf = vec![0u8; 10240];
         let (n, _) = self.socket.recv_from(&mut buf)
                                 .expect("Didn't receive data");

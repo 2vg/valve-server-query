@@ -4,9 +4,6 @@ extern crate serde_json;
  
 use binary_reader::{Endian, BinaryReader};
 
-use std::collections::HashMap;
-
-use serde::{Deserialize, Serialize};
 use serde_json::{json, Value, Result};
 
 pub fn parse_info_response(response: Vec<u8>) -> std::result::Result<Value, String> {
@@ -20,9 +17,9 @@ pub fn parse_info_response(response: Vec<u8>) -> std::result::Result<Value, Stri
 
     let mut binary = BinaryReader::from_vec(&response);
     binary.set_endian(Endian::Little);
-    binary.read_u32(); // 0xFF,0xFF,0xFF,0xFF
-    binary.read_u8(); // Header
-    binary.read_u8(); // packet type
+    let _ = binary.read_u32(); // 0xFF,0xFF,0xFF,0xFF
+    let _ = binary.read_u8(); // Header
+    let _ = binary.read_u8(); // packet type
 
     let server_name = binary.read_cstr();
     let map_name = binary.read_cstr();
@@ -56,8 +53,8 @@ pub fn parse_info_response(response: Vec<u8>) -> std::result::Result<Value, Stri
 pub fn parse_player_response(response: Vec<u8>) -> std::result::Result<Vec<Value>, String> {
     let mut binary = BinaryReader::from_vec(&response);
     binary.set_endian(Endian::Little);
-    binary.read_u32();
-    binary.read_u8();
+    let _ = binary.read_u32();
+    let _ = binary.read_u8();
 
     let players = binary.read_u8().unwrap();
     let mut players_vec = Vec::new();
