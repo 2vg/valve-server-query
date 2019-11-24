@@ -7,6 +7,8 @@ use binary_reader::{Endian, BinaryReader};
 use serde_json::{json, Value, Result};
 
 pub fn parse_info_response(response: Vec<u8>) -> std::result::Result<Value, String> {
+    if response.len() == 0 { return Err("empty".to_string()) }
+
     if response[0..4] != [0xff, 0xff, 0xff, 0xff] {
         return Err(error_helper_for_parse_response("0..3", &response[0..4]))
     }
@@ -51,6 +53,8 @@ pub fn parse_info_response(response: Vec<u8>) -> std::result::Result<Value, Stri
 }
 
 pub fn parse_player_response(response: Vec<u8>) -> std::result::Result<Vec<Value>, String> {
+    if response.len() == 0 { return Err("empty".to_string()) }
+
     let mut binary = BinaryReader::from_vec(&response);
     binary.set_endian(Endian::Little);
     let _ = binary.read_u32();
