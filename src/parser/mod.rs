@@ -27,14 +27,14 @@ pub fn parse_info_response(response: Vec<u8>) -> std::result::Result<Value, Stri
     let map_name = binary.read_cstr();
     let folder = binary.read_cstr();
     let game_name = binary.read_cstr();
-    let steam_app_id = binary.read_u16().unwrap();
-    let players = binary.read_i8().unwrap();
-    let max_players = binary.read_i8().unwrap();
-    let bots = binary.read_i8().unwrap();
-    let server_type = binary.read_u8().unwrap() as char;
-    let server_environment = binary.read_u8().unwrap() as char;
-    let visibility = binary.read_i8().unwrap();
-    let vac = binary.read_i8().unwrap();
+    let steam_app_id = binary.read_u16().unwrap_or(0);
+    let players = binary.read_i8().unwrap_or(0);
+    let max_players = binary.read_i8().unwrap_or(0);
+    let bots = binary.read_i8().unwrap_or(0);
+    let server_type = binary.read_u8().unwrap_or(0) as char;
+    let server_environment = binary.read_u8().unwrap_or(0) as char;
+    let visibility = binary.read_i8().unwrap_or(0);
+    let vac = binary.read_i8().unwrap_or(0);
 
     Ok(json!({
         "server_name": server_name,
@@ -60,14 +60,14 @@ pub fn parse_player_response(response: Vec<u8>) -> std::result::Result<Vec<Value
     let _ = binary.read_u32();
     let _ = binary.read_u8();
 
-    let players = binary.read_u8().unwrap();
+    let players = binary.read_u8().unwrap_or(0);
     let mut players_vec = Vec::new();
 
     for _ in 0..players {
-        let index = binary.read_u8().unwrap();
+        let index = binary.read_u8().unwrap_or(0);
         let name = binary.read_cstr();
-        let score = binary.read_i32().unwrap();
-        let time = binary.read_u32().unwrap();
+        let score = binary.read_i32().unwrap_or(0);
+        let time = binary.read_u32().unwrap_or(0);
 
         players_vec.push(json!({"index": index, "name": name, "score": score, "time": f32::from_bits(time)}));
     }
