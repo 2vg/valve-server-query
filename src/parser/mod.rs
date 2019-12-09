@@ -1,8 +1,8 @@
-extern crate binary_reader;
+extern crate binary_parser;
 extern crate serde;
 extern crate serde_json;
- 
-use binary_reader::{Endian, BinaryReader};
+
+use binary_parser::parser::BinaryParser;
 
 use serde_json::{json, Value, Result};
 
@@ -17,16 +17,16 @@ pub fn parse_info_response(response: Vec<u8>) -> std::result::Result<Value, Stri
         return Err(error_helper_for_parse_response("4", &[response[4]]))
     }
 
-    let mut binary = BinaryReader::from_vec(&response);
-    binary.set_endian(Endian::Little);
+    let mut binary = BinaryParser::from_vec(&response);
+    binary.set_little_endian();
     let _ = binary.read_u32(); // 0xFF,0xFF,0xFF,0xFF
     let _ = binary.read_u8(); // Header
     let _ = binary.read_u8(); // packet type
 
-    let server_name = binary.read_cstr();
-    let map_name = binary.read_cstr();
-    let folder = binary.read_cstr();
-    let game_name = binary.read_cstr();
+    let server_name = binary.read_string();
+    let map_name = binary.read_string();
+    let folder = binary.read_string();
+    let game_name = binary.read_string();
     let steam_app_id = binary.read_u16().unwrap_or(0);
     let players = binary.read_i8().unwrap_or(0);
     let max_players = binary.read_i8().unwrap_or(0);
@@ -55,8 +55,8 @@ pub fn parse_info_response(response: Vec<u8>) -> std::result::Result<Value, Stri
 pub fn parse_player_response(response: Vec<u8>) -> std::result::Result<Vec<Value>, String> {
     if response.len() == 0 { return Ok(vec![json!({})]) }
 
-    let mut binary = BinaryReader::from_vec(&response);
-    binary.set_endian(Endian::Little);
+    let mut binary = BinaryParser::from_vec(&response);
+    binary.set_little_endian();
     let _ = binary.read_u32();
     let _ = binary.read_u8();
 
@@ -65,11 +65,11 @@ pub fn parse_player_response(response: Vec<u8>) -> std::result::Result<Vec<Value
 
     for _ in 0..players {
         let index = binary.read_u8().unwrap_or(0);
-        let name = binary.read_cstr();
+        let name = binary.read_string();
         let score = binary.read_i32().unwrap_or(0);
-        let time = binary.read_u32().unwrap_or(0);
+        let time = binary.read_f32().unwrap_or(0.0);
 
-        players_vec.push(json!({"index": index, "name": name, "score": score, "time": f32::from_bits(time)}));
+        players_vec.push(json!({"index": index, "name": name, "score": score, "time": time}));
     }
 
     Ok(players_vec)

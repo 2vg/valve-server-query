@@ -8,3 +8,4 @@ edition = "2018"
 serde_json = "1.0.41"
 serde = "1.0.102"
 binary-reader = "0.2.0"
+binary_parser = { git = "https://github.com/2vg/binary-parser" }
