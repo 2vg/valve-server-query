@@ -1,3 +1,4 @@
+extern crate anyhow;
 extern crate binary_parser;
 extern crate serde;
 extern crate serde_json;
@@ -6,16 +7,8 @@ use binary_parser::parser::BinaryParser;
 
 use serde_json::{json, Value, Result};
 
-pub fn parse_info_response(response: Vec<u8>) -> std::result::Result<Value, String> {
+pub fn parse_info_response(response: Vec<u8>) -> anyhow::Result<Value> {
     if response.len() == 0 { return Ok(json!({})) }
-
-    if response[0..4] != [0xff, 0xff, 0xff, 0xff] {
-        return Err(error_helper_for_parse_response("0..3", &response[0..4]))
-    }
-
-    if response[4] != 0x49 {
-        return Err(error_helper_for_parse_response("4", &[response[4]]))
-    }
 
     let mut binary = BinaryParser::from_vec(&response);
     binary.set_little_endian();
@@ -23,10 +16,10 @@ pub fn parse_info_response(response: Vec<u8>) -> std::result::Result<Value, Stri
     let _ = binary.read_u8(); // Header
     let _ = binary.read_u8(); // packet type
 
-    let server_name = binary.read_string();
-    let map_name = binary.read_string();
-    let folder = binary.read_string();
-    let game_name = binary.read_string();
+    let server_name = binary.read_string().unwrap_or("".to_string());
+    let map_name = binary.read_string().unwrap_or("".to_string());
+    let folder = binary.read_string().unwrap_or("".to_string());
+    let game_name = binary.read_string().unwrap_or("".to_string());
     let steam_app_id = binary.read_u16().unwrap_or(0);
     let players = binary.read_i8().unwrap_or(0);
     let max_players = binary.read_i8().unwrap_or(0);
@@ -52,7 +45,7 @@ pub fn parse_info_response(response: Vec<u8>) -> std::result::Result<Value, Stri
     }))
 }
 
-pub fn parse_player_response(response: Vec<u8>) -> std::result::Result<Vec<Value>, String> {
+pub fn parse_player_response(response: Vec<u8>) -> anyhow::Result<Vec<Value>> {
     if response.len() == 0 { return Ok(vec![json!({})]) }
 
     let mut binary = BinaryParser::from_vec(&response);
@@ -65,11 +58,13 @@ pub fn parse_player_response(response: Vec<u8>) -> std::result::Result<Vec<Value
 
     for _ in 0..players {
         let index = binary.read_u8().unwrap_or(0);
-        let name = binary.read_string();
+        let name = binary.read_string().unwrap_or("".to_string());
         let score = binary.read_i32().unwrap_or(0);
         let time = binary.read_f32().unwrap_or(0.0);
 
-        players_vec.push(json!({"index": index, "name": name, "score": score, "time": time}));
+        let json_str = format!(r#""{{index": {}, "name": {}, "score": {}, "time": {}}}"#, index, name, score, time);
+
+        players_vec.push(serde_json::from_str(&json_str)?);
     }
 
     Ok(players_vec)
@@ -88,8 +83,3 @@ pub fn print_json(json: &Value) -> Result<()> {
 pub fn bytes_to_char_and_map(bytes: &[u8]) -> String {
     bytes.iter().map(|&s| format!("{}, ", s.to_string())).collect::<String>()
 }
-
-fn error_helper_for_parse_response(position: &'static str, buffer: &[u8]) -> String {
-    format!("response invalid -> {}: {}", position, bytes_to_char_and_map(buffer))
-}
-
