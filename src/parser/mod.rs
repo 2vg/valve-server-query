@@ -62,9 +62,7 @@ pub fn parse_player_response(response: Vec<u8>) -> anyhow::Result<Vec<Value>> {
         let score = binary.read_i32().unwrap_or(0);
         let time = binary.read_f32().unwrap_or(0.0);
 
-        let json_str = format!(r#"{{"index": "{}", "name": "{}", "score": "{}", "time": "{}"}}"#, index, name, score, time);
-
-        println!("{}", &json_str);
+        let json_str = format!(r#"{{"index": "{}", "name": "{}", "score": "{}", "time": "{}"}}"#, index, name, score, time)
 
         players_vec.push(serde_json::from_str(&json_str)?);
     }
