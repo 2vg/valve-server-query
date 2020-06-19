@@ -5,10 +5,11 @@ extern crate serde_json;
 
 use binary_parser::parser::BinaryParser;
 
+use anyhow::*;
 use serde_json::{json, Value, Result};
 
 pub fn parse_info_response(response: Vec<u8>) -> anyhow::Result<Value> {
-    if response.len() == 0 { return Ok(json!({})) }
+    if response.len() == 0 { bail!(json!({"error": "can't get response from the server."})) }
 
     let mut binary = BinaryParser::from_vec(&response);
     binary.set_little_endian();
@@ -46,7 +47,7 @@ pub fn parse_info_response(response: Vec<u8>) -> anyhow::Result<Value> {
 }
 
 pub fn parse_player_response(response: Vec<u8>) -> anyhow::Result<Vec<Value>> {
-    if response.len() == 0 { return Ok(vec![json!({})]) }
+    if response.len() == 0 { bail!(json!({"error": "can't get response from the server."})) }
 
     let mut binary = BinaryParser::from_vec(&response);
     binary.set_little_endian();
