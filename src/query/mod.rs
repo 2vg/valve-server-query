@@ -23,7 +23,26 @@ impl QueryContext {
 
     pub fn info_query<'a>(&self, host: &'a str, port: &'a str) -> Vec<u8> {
         let query_type = 0x54; // 'T'
-        return Vec::from(self.send_query(&host, &port, query_type, None as Option<&[u8]>));
+        let result = self.send_query(&host, &port, query_type, None as Option<&[u8]>);
+        if result.len() == 0 { return result; } // for timeout error
+
+        // NOTE: In the future, additional data may be appended to the request! Do not assume that if a request has extra data, that it is a bogus packet!
+        //       Servers may respond with the data immediately. However, since this reply is larger than the request,
+        //       it makes the server vulnerable to a reflection amplification attack. Instead,
+        //       the server may reply with a challenge to the client using S2C_CHALLENGE ('A' or 0x41).
+        //       In that case, the client should repeat the request by appending the challenge number.
+        //       This change was introduced in December 2020 to address the reflection attack vulnerability,
+        //       and all clients are encouraged to support the new protocol.
+        //       See this post for more info: https://steamcommunity.com/discussions/forum/14/2974028351344359625/
+
+        // 0x41 == 'A'
+        if &result[3] == &0x41 {
+            let chanllenge_token = &result[5..9]; // challenge token, [0xFF,0xFF,0xFF,0xFF,0x41,hoge,hoge,hoge,hoge]
+            return Vec::from(self.send_query(&host, &port, query_type, Some(chanllenge_token)));
+        }
+        else {
+            return result;
+        }
     }
 
     pub fn player_query<'a>(&self, host: &'a str, port: &'a str) -> Vec<u8> {
